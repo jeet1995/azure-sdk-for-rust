@@ -5,17 +5,14 @@ use std::ffi::CString;
 use std::os::raw::c_char;
 
 use azure_core::credentials::Secret;
-use azure_data_cosmos::{
-    clients::DatabaseClient, query::Query, ConnectionString, CosmosAccountEndpoint,
-    CosmosAccountReference, CosmosClient, CosmosClientBuilder, QueryOptions,
-};
+use azure_data_cosmos::{clients::DatabaseClient, query::Query, CosmosClient, QueryOptions};
 use futures::TryStreamExt;
 
-use crate::context::CallContext;
 use crate::error::{self, CosmosErrorCode, Error};
 use crate::options::{ClientOptions, CreateDatabaseOptions};
 use crate::string::parse_cstr;
 use crate::unwrap_required_ptr;
+use crate::{context::CallContext, convert_optional_ptr};
 
 /// Creates a new CosmosClient and returns a pointer to it via the out parameter.
 ///
@@ -35,26 +32,20 @@ pub extern "C" fn cosmos_client_create_with_key(
     ctx: *mut CallContext,
     endpoint: *const c_char,
     key: *const c_char,
+    #[allow(
+        unused_variables,
+        reason = "options parameter is reserved for future use, and prefixing with '_' appears in docs"
+    )]
     options: *const ClientOptions,
     out_client: *mut *mut CosmosClient,
 ) -> CosmosErrorCode {
-    context!(ctx).run_async_with_output(out_client, async {
-        let endpoint: CosmosAccountEndpoint =
-            parse_cstr(endpoint, error::messages::INVALID_ENDPOINT)?.parse()?;
+    context!(ctx).run_sync_with_output(out_client, || {
+        let endpoint = parse_cstr(endpoint, error::messages::INVALID_ENDPOINT)?;
         let key = parse_cstr(key, error::messages::INVALID_KEY)?.to_string();
+        let options = convert_optional_ptr(options)?;
 
-        let account = CosmosAccountReference::with_master_key(endpoint, Secret::new(key));
-        let mut builder = CosmosClientBuilder::new();
-
-        // Apply options from C options if provided
-        if !options.is_null() {
-            let c_options = unsafe { &*options };
-            if c_options.allow_invalid_certificates() {
-                builder = builder.with_allow_emulator_invalid_certificates(true);
-            }
-        }
-
-        let client = builder.build(account).await?;
+        let client =
+            azure_data_cosmos::CosmosClient::with_key(endpoint, Secret::new(key), options)?;
 
         Ok(Box::new(client))
     })
@@ -79,29 +70,24 @@ pub extern "C" fn cosmos_client_create_with_key(
 pub extern "C" fn cosmos_client_create_with_connection_string(
     ctx: *mut CallContext,
     connection_string: *const c_char,
+    #[allow(
+        unused_variables,
+        reason = "options parameter is reserved for future use, and prefixing with '_' appears in docs"
+    )]
     options: *const ClientOptions,
     out_client: *mut *mut CosmosClient,
 ) -> CosmosErrorCode {
-    context!(ctx).run_async_with_output(out_client, async {
+    context!(ctx).run_sync_with_output(out_client, || {
         let connection_string_str = parse_cstr(
             connection_string,
             error::messages::INVALID_CONNECTION_STRING,
         )?;
+        let options = convert_optional_ptr(options)?;
 
-        let conn: ConnectionString = connection_string_str.parse()?;
-        let endpoint: CosmosAccountEndpoint = conn.account_endpoint.parse()?;
-        let account = CosmosAccountReference::with_master_key(endpoint, conn.account_key);
-        let mut builder = CosmosClientBuilder::new();
-
-        // Apply options from C options if provided
-        if !options.is_null() {
-            let c_options = unsafe { &*options };
-            if c_options.allow_invalid_certificates() {
-                builder = builder.with_allow_emulator_invalid_certificates(true);
-            }
-        }
-
-        let client = builder.build(account).await?;
+        let client = azure_data_cosmos::CosmosClient::with_connection_string(
+            Secret::new(connection_string_str.to_string()),
+            options,
+        )?;
 
         Ok(Box::new(client))
     })
