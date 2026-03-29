@@ -17,8 +17,7 @@ package com.azure.cosmos;
 public final class CosmosNativeBridge {
 
     static {
-        System.loadLibrary("azurecosmos");
-        System.loadLibrary("azurecosmos_jni");
+        NativeLoader.load();
     }
 
     private CosmosNativeBridge() {}
