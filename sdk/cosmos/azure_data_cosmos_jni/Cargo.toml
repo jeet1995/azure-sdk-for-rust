@@ -1,0 +1,16 @@
+[package]
+name = "azure_data_cosmos_jni"
+version = "0.1.0"
+edition = "2021"
+description = "JNI glue layer for azure_data_cosmos_native — bridges Java native methods to cosmos_* C-ABI"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+name = "azurecosmos_jni"
+
+[dependencies]
+jni = "0.21"
+
+# No Cargo dependency on azure_data_cosmos_native.
+# We link at the OS level via build.rs to enforce hard layer isolation.
