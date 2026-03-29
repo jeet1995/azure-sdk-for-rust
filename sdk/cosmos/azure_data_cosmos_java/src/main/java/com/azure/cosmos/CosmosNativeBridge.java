@@ -7,14 +7,14 @@ package com.azure.cosmos;
  * Native bridge to the azure_data_cosmos_native C-ABI layer.
  *
  * <p>This class declares the {@code native} methods that map to {@code cosmos_*} C functions
- * exported by {@code libazurecosmos}. All methods are package-private — callers use
- * {@link CosmosClient} or {@link CosmosReactiveClient} instead.</p>
+ * exported by {@code libazurecosmos}. Methods are public for cross-package access by
+ * JNI/JNA strategy implementations.</p>
  *
  * <p>Error handling: every C-ABI function returns a {@code CosmosErrorCode} (int).
  * 0 = success, non-zero = error. The JNI glue converts non-zero into
  * {@link CosmosException} before returning to Java.</p>
  */
-final class CosmosNativeBridge {
+public final class CosmosNativeBridge {
 
     static {
         System.loadLibrary("azurecosmos");
@@ -25,62 +25,62 @@ final class CosmosNativeBridge {
 
     // ── Runtime lifecycle ──────────────────────────────────────────────
 
-    static native long nativeRuntimeContextCreate();
+    public static native long nativeRuntimeContextCreate();
 
-    static native void nativeRuntimeContextFree(long runtimeContext);
+    public static native void nativeRuntimeContextFree(long runtimeContext);
 
     // ── Call context lifecycle ──────────────────────────────────────────
 
-    static native long nativeCallContextCreate(long runtimeContext, boolean includeErrorDetails);
+    public static native long nativeCallContextCreate(long runtimeContext, boolean includeErrorDetails);
 
-    static native void nativeCallContextFree(long callContext);
+    public static native void nativeCallContextFree(long callContext);
 
     // ── Client lifecycle ───────────────────────────────────────────────
 
-    static native long nativeClientCreateWithKey(
+    public static native long nativeClientCreateWithKey(
             long callContext,
             String endpoint,
             String key) throws CosmosException;
 
-    static native void nativeClientFree(long client);
+    public static native void nativeClientFree(long client);
 
     // ── Navigation ─────────────────────────────────────────────────────
 
-    static native long nativeDatabaseClient(
+    public static native long nativeDatabaseClient(
             long callContext,
             long client,
             String databaseId) throws CosmosException;
 
-    static native void nativeDatabaseFree(long database);
+    public static native void nativeDatabaseFree(long database);
 
-    static native long nativeContainerClient(
+    public static native long nativeContainerClient(
             long callContext,
             long database,
             String containerId) throws CosmosException;
 
-    static native void nativeContainerFree(long container);
+    public static native void nativeContainerFree(long container);
 
     // ── Item CRUD ──────────────────────────────────────────────────────
 
-    static native void nativeCreateItem(
+    public static native void nativeCreateItem(
             long callContext,
             long container,
             String partitionKey,
             String jsonData) throws CosmosException;
 
-    static native String nativeReadItem(
+    public static native String nativeReadItem(
             long callContext,
             long container,
             String partitionKey,
             String itemId) throws CosmosException;
 
-    static native void nativeUpsertItem(
+    public static native void nativeUpsertItem(
             long callContext,
             long container,
             String partitionKey,
             String jsonData) throws CosmosException;
 
-    static native void nativeDeleteItem(
+    public static native void nativeDeleteItem(
             long callContext,
             long container,
             String partitionKey,
